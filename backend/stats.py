@@ -1,14 +1,14 @@
 """Keeps the visitor statistics for each day in a small file, so they are still there after the laptop is closed."""
 
 import json
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 # The numbers are saved here, next to this file, with one entry per day.
 STATS_FILE = Path(__file__).parent / "stats.json"
 
-# A reset moves the old numbers here, in case it was pressed by mistake.
-BACKUP_FILE = Path(__file__).parent / "stats-backup.json"
+# Each reset moves the old numbers into this folder, in a file named with the date and time.
+BACKUP_FOLDER = Path(__file__).parent / "stats-backups"
 
 # The visitor is not asked Yes or No after these results, so they count as Unknown.
 UNKNOWN_RESULTS = ("not_sure", "no_hand", "not_included")
@@ -71,8 +71,10 @@ def count_answer(answer):
     return read_stats()
 
 
-# Start again from zero, keeping the old numbers in the backup file.
+# Start again from zero, keeping the old numbers in a dated backup file, for example stats-2026-11-08_14-30-05.json.
 def reset_stats():
     if STATS_FILE.exists():
-        STATS_FILE.replace(BACKUP_FILE)
+        BACKUP_FOLDER.mkdir(exist_ok=True)
+        stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        STATS_FILE.replace(BACKUP_FOLDER / f"stats-{stamp}.json")
     return read_stats()

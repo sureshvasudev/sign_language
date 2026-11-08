@@ -270,7 +270,7 @@ async function answerFeedback(answer) {
 
 // Ask "are you sure?", then set the statistics back to zero on the server.
 async function resetStats() {
-  if (!confirm("Reset all statistics to 0? The old numbers are kept in backend/stats-backup.json.")) {
+  if (!confirm("Reset all statistics to 0? The old numbers are kept in the backend/stats-backups folder.")) {
     return;
   }
   try {
