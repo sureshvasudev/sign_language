@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Sign Language Translator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- Title with the yellow (i) button -->
+  <h1>AI SIGN LANGUAGE TRANSLATOR <button class="info" id="openAbout" type="button" aria-label="About this project" title="About this project">i</button></h1>
+
+  <!-- Statistics row: yesterday and today in each box (app.js fills in the saved numbers from the server) -->
+  <div class="kpis">
+    <div class="kpi">
+      <div class="kpi-days">
+        <div class="kpi-day past"><b id="yesterday-attempts">0</b><small>Yesterday</small></div>
+        <div class="kpi-day"><b id="today-attempts">0</b><small>Today</small></div>
+      </div>
+      Attempts
+    </div>
+    <div class="kpi ok">
+      <div class="kpi-days">
+        <div class="kpi-day past"><b id="yesterday-correct">0</b><small>Yesterday</small></div>
+        <div class="kpi-day"><b id="today-correct">0</b><small>Today</small></div>
+      </div>
+      Correct
+    </div>
+    <div class="kpi bad">
+      <div class="kpi-days">
+        <div class="kpi-day past"><b id="yesterday-incorrect">0</b><small>Yesterday</small></div>
+        <div class="kpi-day"><b id="today-incorrect">0</b><small>Today</small></div>
+      </div>
+      Incorrect
+    </div>
+    <div class="kpi unk">
+      <div class="kpi-days">
+        <div class="kpi-day past"><b id="yesterday-unknown">0</b><small>Yesterday</small></div>
+        <div class="kpi-day"><b id="today-unknown">0</b><small>Today</small></div>
+      </div>
+      Unknown
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- Left: camera box and Capture button -->
+    <div class="left card">
+      <div class="cam">
+        <video id="camVideo" autoplay playsinline muted hidden></video>
+        <div id="camIdle">
+          <button class="btn" type="button" id="startBtn">CLICK TO START</button>
+          <p id="camError" class="cam-error" hidden></p>
+        </div>
+        <div id="camBusy" class="cam-busy" hidden><div class="dots"><span></span><span></span><span></span></div>AI is analysing your sign...</div>
+      </div>
+      <div class="bar"><button class="btn" type="button" id="captureBtn" disabled>📸 Capture</button></div>
+      <!-- Hidden drawing area used to turn a video frame into a JPEG photo -->
+      <canvas id="snapCanvas" hidden></canvas>
+    </div>
+
+    <!-- Right card, state 1: How to play -->
+    <div class="card guide" id="guide">
+      <h3>How to play</h3>
+      <ol>
+        <li>Pick one of the 9 signs below.</li>
+        <li>Click <b>CLICK TO START</b> to turn on the camera.</li>
+        <li>Show the sign clearly to the camera.</li>
+        <li>When you are ready, press <b>Capture</b>.</li>
+        <li>Wait a moment for the AI's result.</li>
+      </ol>
+    </div>
+
+    <!-- Right card, state 2: workflow animation -->
+    <div class="card pipe" id="pipe" hidden>
+      <h3>The AI is working on your sign</h3>
+      <ol class="steps">
+        <li><span class="ic">📸</span><div><b>Capture</b><small>Photo taken from the webcam</small></div></li>
+        <li><span class="ic">📨</span><div><b>Send to the AI</b><small>Photo goes to the AI on this laptop</small></div></li>
+        <li><span class="ic">✋</span><div><b>Find the hand</b><small>MediaPipe crops the photo to your hand</small></div></li>
+        <li><span class="ic">🧠</span><div><b>Score each sign</b><small>The model checks all 9 signs</small></div></li>
+        <li><span class="ic">✅</span><div><b>Check confidence</b><small>Is the best score above 70%?</small></div></li>
+      </ol>
+    </div>
+
+    <!-- Right card, state 3: result (filled in by app.js) -->
+    <div class="card result" id="result" hidden>
+      <h3 id="resultTitle"></h3>
+      <div class="big" id="resultIcon"></div>
+      <div id="resultDetails"></div>
+      <div id="feedback">
+        <div>Did the AI get it right?</div>
+        <div class="row-btns" style="margin-top:4px">
+          <button class="btn" type="button" id="yesBtn">👍 Yes</button>
+          <button class="btn y" type="button" id="noBtn">👎 No</button>
+        </div>
+      </div>
+      <div id="thanks" hidden>Thank you! 💖</div>
+      <div class="row-btns">
+        <button class="btn" type="button" id="againBtn">Try Again</button>
+        <button class="btn y" type="button" id="finishBtn">Finish</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Learn the 9 signs: hover over a sign to see a sample photo (from the test_photos folder) -->
+  <div class="signs card">
+    <h3>Learn the 9 signs</h3>
+    <div class="chips">
+      <div class="chip" tabindex="0"><img class="chip-pic" src="test_photos/A.jpg" alt=""><span class="chip-name">A</span><img class="chip-pop" src="test_photos/A.jpg" alt="ASL sign for A"></div>
+      <div class="chip" tabindex="0"><img class="chip-pic" src="test_photos/B.jpg" alt=""><span class="chip-name">B</span><img class="chip-pop" src="test_photos/B.jpg" alt="ASL sign for B"></div>
+      <div class="chip" tabindex="0"><img class="chip-pic" src="test_photos/C.jpg" alt=""><span class="chip-name">C</span><img class="chip-pop" src="test_photos/C.jpg" alt="ASL sign for C"></div>
+      <div class="chip" tabindex="0"><img class="chip-pic" src="test_photos/F.jpg" alt=""><span class="chip-name">F</span><img class="chip-pop" src="test_photos/F.jpg" alt="ASL sign for F"></div>
+      <div class="chip" tabindex="0"><img class="chip-pic" src="test_photos/O.jpg" alt=""><span class="chip-name">O</span><img class="chip-pop" src="test_photos/O.jpg" alt="ASL sign for O"></div>
+      <div class="chip" tabindex="0"><img class="chip-pic" src="test_photos/L.jpg" alt=""><span class="chip-name">L</span><img class="chip-pop" src="test_photos/L.jpg" alt="ASL sign for L"></div>
+      <div class="chip" tabindex="0"><img class="chip-pic" src="test_photos/V.jpg" alt=""><span class="chip-name">V</span><img class="chip-pop" src="test_photos/V.jpg" alt="ASL sign for V"></div>
+      <div class="chip" tabindex="0"><img class="chip-pic" src="test_photos/Y.jpg" alt=""><span class="chip-name">Y</span><img class="chip-pop" src="test_photos/Y.jpg" alt="ASL sign for Y"></div>
+      <div class="chip" tabindex="0" title="I love you"><img class="chip-pic" src="test_photos/ILoveU.jpg" alt=""><span class="chip-name">🤟</span><img class="chip-pop" src="test_photos/ILoveU.jpg" alt="ASL sign for I love you"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Info popup, opened by the (i) button -->
+<dialog id="about" aria-labelledby="aboutTitle">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="aboutTitle">About this project</h2>
+      <button class="close" id="closeAbout" type="button" aria-label="Close">✕</button>
+    </div>
+
+    <div class="cols">
+      <div class="sec">
+        <h3>Project Idea</h3>
+        <!-- The 7 steps of how this project was made, drawn as a timeline -->
+        <ol class="journey">
+          <li><span class="journey-num">1</span><div class="journey-box"><b>💡 Find the idea</b><small>Show that an idea can be built easily using AI. We picked sign language recognition.</small></div></li>
+          <li><span class="journey-num">2</span><div class="journey-box"><b>🔍 Do the research</b><small>Use Claude Opus 5.5 to learn how it can be done, and choose signs that are not easily confused. The tools we chose:</small><small><b>Python:</b> runs the program on the laptop that connects everything.</small><small><b>MediaPipe:</b> finds the hand in the photo and crops to it.</small><small><b>SigLIP2 model:</b> the AI that scores the hand and picks the sign.</small></div></li>
+          <li><span class="journey-num">3</span><div class="journey-box"><b>📝 Make the plan</b><small>Turn the idea into a clear plan.</small></div></li>
+          <li><span class="journey-num">4</span><div class="journey-box"><b>🎨 Design the look</b><small>Create a UI theme for the idea using Claude.</small></div></li>
+          <li><span class="journey-num">5</span><div class="journey-box"><b>✍️ Write the prompt</b><small>Use Claude Opus 5.5 to write the detailed instructions into a file called CLAUDE.md.</small></div></li>
+          <li><span class="journey-num">6</span><div class="journey-box"><b>🤖 Build with AI</b><small>Run the prompt using Claude Opus 5.5 in VS Code, which writes the code.</small></div></li>
+          <li><span class="journey-num">7</span><div class="journey-box"><b>✨ Fine-tune</b><small>Make adjustments until we reach the final result.</small></div></li>
+        </ol>
+      </div>
+
+      <div class="sec">
+        <h3>How it is done</h3>
+        <div class="flow">
+          <span class="flow-step">📷 Webcam</span><span class="flow-arrow">→</span>
+          <span class="flow-step">📨 Local API</span><span class="flow-arrow">→</span>
+          <span class="flow-step">✋ MediaPipe</span><span class="flow-arrow">→</span>
+          <span class="flow-step">🧠 SigLIP2 model</span><span class="flow-arrow">→</span>
+          <span class="flow-step">✅ Confidence check</span><span class="flow-arrow">→</span>
+          <span class="flow-step">💬 Result</span>
+        </div>
+        <ul>
+          <li>The webpage takes a photo from the webcam and sends it to a small program (an API) running on the same laptop.</li>
+          <li>MediaPipe, a free Google tool, finds the hand and crops the photo to it. If there is no hand, you are asked to try again.</li>
+          <li>An AI model called SigLIP2, trained on ASL signs, scores the photo against each sign and picks the highest.</li>
+          <li>If the best score is below about 70%, the page says "not sure, try again" instead of guessing.</li>
+          <li>Everything runs on the laptop, so no photos leave it and it works without internet.</li>
+          <li>The statistics are saved in a small file on the laptop, so they are still there after the page or the laptop is closed and opened again.</li>
+        </ul>
+      </div>
+    </div>
+
+    <footer class="team-row">
+      <h3>Who we are:</h3>
+      <span class="member"><b>Nikita</b> · Class 9 - Sapphire</span>
+      <span class="member"><b>Sivani</b> · Class 9 - Sapphire</span>
+    </footer>
+  </div>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>

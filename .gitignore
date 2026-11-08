@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+backend/stats.json
+backend/stats-backup.json
+.DS_Store
+
+backend/debug/
+test_photos/
