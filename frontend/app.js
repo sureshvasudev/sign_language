@@ -205,6 +205,7 @@ function showResult(answer) {
     title = "THE AI FAILED TO RECOGNISE THE SIGN.";
     icon = "🤔";
     details = "The AI was not sure (best guess " + answer.sign + ", only " + asPercent(answer.confidence) + "). Please try again.";
+    askIfRight = true;
   } else if (answer.status === "no_hand") {
     title = "THE AI COULD NOT FIND A HAND.";
     icon = "✋";
@@ -212,7 +213,8 @@ function showResult(answer) {
   } else if (answer.status === "not_included") {
     title = "SIGN NOT INCLUDED IN THIS PROJECT.";
     icon = "🚫";
-    details = "The AI thinks this is " + answer.sign + " (" + asPercent(answer.confidence) + "), which is not one of our 9 signs. Please try one of the signs below.";
+    details = "The AI thinks this is " + answer.sign + " (" + asPercent(answer.confidence) + "), which is not one of our 9 signs. Please try one of the 9 signs shown.";
+    askIfRight = true;
   } else {
     title = "SOMETHING WENT WRONG.";
     icon = "⚠️";
@@ -224,7 +226,19 @@ function showResult(answer) {
   byId("resultDetails").innerHTML = details;
   byId("feedback").hidden = !askIfRight;
   byId("thanks").hidden = true;
+  // When the AI gave any sign, Try Again and Finish stay hidden until Yes or No is pressed,
+  // so the photo goes into the right folder. With no hand found, they show straight away.
+  byId("nextBtns").hidden = askIfRight;
+  // Only a confident answer lights up a sign in the strip.
+  highlightSign(answer.status === "ok" ? answer.sign : "");
   showCard("result");
+}
+
+// Light up the sign the AI recognised in the "Learn the 9 signs" strip (or no sign, if signName is empty).
+function highlightSign(signName) {
+  document.querySelectorAll(".chip").forEach(chip => {
+    chip.classList.toggle("match", chip.dataset.sign === signName);
+  });
 }
 
 // ---------- Statistics ----------
@@ -254,6 +268,8 @@ async function loadStats() {
 async function answerFeedback(answer) {
   byId("feedback").hidden = true;
   byId("thanks").hidden = false;
+  // The visitor has answered, so show Try Again and Finish.
+  byId("nextBtns").hidden = false;
   try {
     const response = await fetch("/stats/answer", {
       method: "POST",
@@ -268,22 +284,44 @@ async function answerFeedback(answer) {
   }
 }
 
-// Ask "are you sure?", then set the statistics back to zero on the server.
+// Ask the server to reset the statistics, sending the PIN (empty if none was typed).
+function sendReset(pin) {
+  return fetch("/stats/reset", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pin: pin })
+  });
+}
+
+// Ask "are you sure?", then set the statistics back to zero on the server. Asks for the PIN only if the server needs one.
 async function resetStats() {
   if (!confirm("Reset all statistics to 0? The old numbers are kept in the backend/stats-backups folder.")) {
     return;
   }
   try {
-    const response = await fetch("/stats/reset", { method: "POST" });
+    let response = await sendReset("");
+    // 403 means this server needs a PIN (the AWS copy). The laptop never asks.
+    if (response.status === 403) {
+      const pin = prompt("Enter the reset PIN:");
+      if (pin === null) {
+        return;
+      }
+      response = await sendReset(pin);
+      if (response.status === 403) {
+        alert("Wrong PIN. Nothing was reset.");
+        return;
+      }
+    }
     if (response.ok) {
       showStats(await response.json());
+      alert("Done. All statistics are now 0.");
     }
   } catch (error) {
     console.log("Could not reset the statistics:", error);
   }
 }
 
-// Hidden shortcut for the team: Ctrl+Alt+R resets the statistics. There is no button, so visitors won't find it.
+// Keyboard shortcut for the team: Ctrl+Alt+R resets the statistics, the same as the link in the info popup.
 function onKeyDown(event) {
   if (event.ctrlKey && event.altKey && event.key.toLowerCase() === "r") {
     event.preventDefault();
@@ -296,6 +334,7 @@ function onKeyDown(event) {
 // Go back to the "How to play" card, ready for the next try.
 function startOver() {
   showAnalysing(false);
+  highlightSign("");
   showCard("guide");
   byId("camIdle").hidden = cameraIsOn;
   byId("captureBtn").disabled = !cameraIsOn;
@@ -324,6 +363,21 @@ function closeAbout() {
   byId("about").close();
 }
 
+// On the AWS copy, change the three info lines that say the app runs on the laptop. The laptop keeps the text in index.html.
+async function showWhereItRuns() {
+  try {
+    const response = await fetch("/where");
+    const answer = await response.json();
+    if (answer.place === "aws") {
+      byId("aboutApi").textContent = "The webpage takes a photo from the camera and sends it over the internet to a small program (an API) running on a cloud server (Amazon Web Services).";
+      byId("aboutOffline").textContent = "This copy runs on a cloud server, so photos travel over a secure (https) connection. Each photo is kept in private cloud storage (Amazon S3) for our project. The laptop copy works without internet.";
+      byId("aboutStats").textContent = "The statistics are saved in a small file on the cloud server, so they are still there after the page is closed and opened again.";
+    }
+  } catch (error) {
+    console.log("Could not check where the app runs:", error);
+  }
+}
+
 // Connect the buttons to the functions above.
 byId("startBtn").addEventListener("click", startCamera);
 byId("captureBtn").addEventListener("click", capture);
@@ -333,7 +387,9 @@ byId("againBtn").addEventListener("click", tryAgain);
 byId("finishBtn").addEventListener("click", finish);
 byId("openAbout").addEventListener("click", openAbout);
 byId("closeAbout").addEventListener("click", closeAbout);
+byId("resetLink").addEventListener("click", resetStats);
 document.addEventListener("keydown", onKeyDown);
 
-// Show the saved statistics as soon as the page opens.
+// Show the saved statistics as soon as the page opens, and the right info text for this copy.
 loadStats();
+showWhereItRuns();

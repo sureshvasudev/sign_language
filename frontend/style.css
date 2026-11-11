@@ -20,6 +20,7 @@
   --cam: #333333;
   --cam-ink: #ffffff;
   --font: "Baloo 2", "Trebuchet MS", sans-serif;
+  --chip: 70px;   /* size of each round sign photo */
   color-scheme: light;
 }
 
@@ -34,16 +35,23 @@ body {
 
 /* ---------- Page layout ---------- */
 
+/* Wide screens (laptop, tablet on its side): the page is a grid.
+   Title and statistics across the top, then camera + right card, with the signs strip on the right. */
 .wrap {
-  max-width: 900px;
+  max-width: 1500px;
   margin: 0 auto;
-  padding: 20px 16px 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
+  padding: 20px 16px 16px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "title title"
+    "kpis  kpis"
+    "main  signs";
+  gap: 14px 18px;
 }
 
 h1 {
+  grid-area: title;
   text-align: center;
   color: var(--pink);
   font-size: clamp(24px, 5vw, 34px);
@@ -51,7 +59,7 @@ h1 {
   text-wrap: balance;
 }
 
-.main { display: flex; gap: 18px; flex-wrap: wrap; }
+.main { grid-area: main; display: flex; gap: 18px; }
 
 .card {
   background: var(--card);
@@ -60,7 +68,11 @@ h1 {
   box-shadow: 0 4px 0 var(--pink-soft);
 }
 
-.left { flex: 3 1 340px; min-width: 0; }
+/* The camera card takes all the space the right card and signs strip leave over. */
+.left { flex: 1 1 0; min-width: 0; }
+
+/* The right card ("How to play", "AI is working" or the result) has a fixed-ish width. */
+.guide, .pipe, .result { flex: 0 0 clamp(280px, 26vw, 400px); min-width: 0; }
 
 /* ---------- Buttons ---------- */
 
@@ -81,6 +93,9 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 
 .bar { text-align: center; margin-top: 12px; }
 
+/* Capture is the main action, so its button is bigger than the others */
+.bar button.btn { font-size: 20px; padding: 14px 40px; }
+
 .row-btns {
   display: flex;
   flex-wrap: wrap;
@@ -92,7 +107,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 
 /* ---------- Statistics row ---------- */
 
-.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.kpis { grid-area: kpis; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 
 .kpi {
   background: var(--card);
@@ -126,9 +141,14 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 
 /* ---------- Camera box ---------- */
 
+/* The camera box is as wide as its card allows, but never so tall that the page needs scrolling.
+   (100svh is the screen height; 330px is roughly the title, statistics and Capture button.) */
 .cam {
   aspect-ratio: 16 / 9;
+  width: min(100%, calc((100svh - 330px) * 16 / 9));
+  min-width: 280px;
   max-width: 100%;
+  margin: 0 auto;
   border-radius: 14px;
   background: var(--cam);
   color: var(--cam-ink);
@@ -182,27 +202,27 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 /* ---------- Right card: "How to play" ---------- */
 
 .guide {
-  flex: 1 1 260px;
-  min-width: 0;
+  padding: 20px 24px;
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
-.guide h3 { margin: 0 0 8px; color: var(--pink); text-align: center; }
+.guide h3 { margin: 0 0 8px; color: var(--pink); text-align: center; font-size: 22px; }
 .guide ol {
   margin: 0;
   padding-left: 22px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+  font-size: 19px;
   line-height: 1.35;
 }
 .guide li::marker { color: var(--pink); font-weight: 700; }
 
 /* ---------- Right card: workflow animation ---------- */
 
-.pipe { flex: 1 1 260px; min-width: 0; }
-.pipe h3 { margin: 0 0 10px; color: var(--pink); text-align: center; font-size: 16px; }
+.pipe { display: flex; flex-direction: column; justify-content: center; }
+.pipe h3 { margin: 0 0 10px; color: var(--pink); text-align: center; font-size: 22px; line-height: 1.25; }
 
 .steps {
   list-style: none;
@@ -210,31 +230,31 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 .steps li {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 10px;
+  padding: 8px 12px;
   border-radius: 12px;
   border: 2px solid var(--bg);
   opacity: .4;
   transition: opacity .3s, background .3s, border-color .3s;
 }
 .steps li .ic {
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   flex: none;
   border-radius: 50%;
   background: var(--bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 17px;
+  font-size: 22px;
 }
-.steps li b { display: block; line-height: 1.1; }
-.steps li small { color: var(--muted); line-height: 1.2; display: block; }
+.steps li b { display: block; line-height: 1.1; font-size: 18px; }
+.steps li small { color: var(--muted); line-height: 1.2; display: block; font-size: 15px; }
 
 /* "on" = the step working now, "done" = a finished step */
 .steps li.on { opacity: 1; border-color: var(--pink); background: #fff0f6; }
@@ -245,27 +265,38 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 
 /* ---------- Right card: result ---------- */
 
+/* Big text, so the answer can be read from a few steps away */
 .result {
-  flex: 1 1 260px;
-  min-width: 0;
   border: 3px solid var(--pink);
   text-align: center;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 6px;
+  gap: 12px;
 }
-.result h3 { color: var(--pink); margin: 4px 0; font-size: 16px; line-height: 1.3; text-wrap: balance; }
-.big { font-size: 50px; line-height: 1.2; color: var(--pink); font-weight: 700; }
-.result small { color: var(--muted); }
+.result h3 { color: var(--pink); margin: 4px 0; font-size: 22px; line-height: 1.25; text-wrap: balance; }
+.big { font-size: 110px; line-height: 1.1; color: var(--pink); font-weight: 700; }
+#resultDetails { font-size: 20px; }
+#feedback { font-size: 19px; }
+.result small { color: var(--muted); font-size: 15px; }
+.result button.btn { font-size: 19px; padding: 14px 30px; }
 
 /* ---------- Learn the 9 signs ---------- */
 
-.signs h3 { text-align: center; margin: 0 0 12px; }
-.chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+/* On wide screens: a strip on the right with the signs in 2 columns, I LOVE YOU centred at the bottom */
+.signs {
+  grid-area: signs;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.signs h3 { text-align: center; margin: 0 0 10px; font-size: 15px; line-height: 1.2; }
+.chips { display: grid; grid-template-columns: repeat(2, var(--chip)); gap: 12px; justify-content: center; }
+.chip:last-child { grid-column: 1 / span 2; justify-self: center; }
 .chip {
-  width: 70px;
-  height: 70px;
+  width: var(--chip);
+  height: var(--chip);
   border-radius: 50%;
   background: var(--card);
   border: 2px solid var(--bg);
@@ -279,6 +310,9 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   cursor: help;
 }
 .chip:hover, .chip:focus { border-color: var(--pink); outline: none; }
+
+/* The sign the AI just recognised gets a pink ring and grows a little (set by app.js) */
+.chip.match { border-color: var(--pink); box-shadow: 0 0 0 4px var(--pink-soft), 0 3px 0 var(--yellow); transform: scale(1.08); }
 
 /* The sign's photo fills the round chip, with its name in a small pink badge. */
 .chip-pic { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
@@ -297,13 +331,13 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   justify-content: center;
 }
 
-/* Sample photo of the sign. Hidden until you hover over (or tab to) its chip, then it pops up above it. */
+/* Sample photo of the sign. Hidden until you hover over (or tap / tab to) its chip, then it pops up to the left of it. */
 .chip-pop {
   display: none;
   position: absolute;
-  bottom: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%);
+  top: 50%;
+  right: calc(100% + 12px);
+  transform: translateY(-50%);
   width: 180px;
   height: 180px;
   object-fit: contain;
@@ -488,6 +522,70 @@ dialog::backdrop { background: var(--bg); }
 .team-row h3 { margin: 0; font-size: 16px; }
 .member { border: 2px solid var(--pink-soft); border-radius: 30px; padding: 2px 12px; color: var(--muted); }
 .member b { color: var(--ink); }
+
+/* Small, plain "Reset statistics" link at the bottom of the info popup, for the team */
+.reset-row { margin: 0; text-align: right; }
+.reset-link {
+  border: 0;
+  background: none;
+  padding: 4px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ---------- Fitting laptops and tablets ---------- */
+
+/* Short screens (most laptops, tablets on their side): smaller title, statistics and card text, so nothing needs scrolling */
+@media (max-height: 820px) and (min-width: 900px) {
+  :root { --chip: 58px; }
+  .wrap { padding-top: 10px; gap: 10px 14px; }
+  h1 { font-size: 26px; }
+  .kpi { padding: 4px 6px; }
+  .kpi b { font-size: 22px; }
+  .bar { margin-top: 8px; }
+  .bar button.btn { font-size: 18px; padding: 10px 34px; }
+  .cam { width: min(100%, calc((100svh - 260px) * 16 / 9)); }
+  .guide h3, .pipe h3, .result h3 { font-size: 19px; }
+  .guide ol { font-size: 16px; gap: 8px; }
+  .steps { gap: 5px; }
+  .steps li { padding: 5px 10px; }
+  .steps li .ic { width: 34px; height: 34px; font-size: 17px; }
+  .steps li b { font-size: 16px; }
+  .steps li small { font-size: 13px; }
+  .big { font-size: 80px; }
+  #resultDetails, #feedback { font-size: 17px; }
+  .result button.btn { font-size: 17px; padding: 10px 24px; }
+}
+
+/* Upright tablet (and phones): one column. Order: camera, signs in a row, then the right card. */
+@media (max-width: 899px) {
+  :root { --chip: 54px; }
+  .wrap {
+    grid-template-columns: 1fr;
+    grid-template-areas: "title" "kpis" "cam" "signs" "card";
+    gap: 10px;
+    padding-top: 12px;
+  }
+  h1 { font-size: 26px; }
+  .main { display: contents; }   /* lets the camera card and right card sit directly in the page grid */
+  .left { grid-area: cam; }
+  .guide, .pipe, .result { grid-area: card; }
+  .cam { width: 100%; min-width: 0; }
+  .bar { margin-top: 8px; }
+  .signs { padding: 10px; }
+  .signs h3 { margin-bottom: 6px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip-pop { top: auto; right: auto; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); }
+  .guide ol { font-size: 17px; gap: 6px; }
+  .steps { gap: 4px; }
+  .steps li { padding: 4px 10px; }
+  .steps li .ic { width: 34px; height: 34px; font-size: 17px; }
+  .steps li small { font-size: 13px; }
+  .big { font-size: 80px; }
+}
 
 /* Turn off the bouncing for visitors who prefer less motion */
 @media (prefers-reduced-motion: reduce) {

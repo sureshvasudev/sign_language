@@ -1,0 +1,23 @@
+# Starts the sign language app whenever the AWS server starts, and restarts it if it stops.
+# deploy/setup.sh copies this file to /etc/systemd/system/.
+[Unit]
+Description=AI Sign Language Translator
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/sign_language
+# Gives the app RESET_PIN and SAVE_DEBUG_CROPS=no, which only the AWS copy has.
+EnvironmentFile=/etc/signlang.env
+# Tells the page it runs on AWS, so the info popup does not say "runs on the laptop".
+Environment=APP_PLACE=aws
+# Keep the webcam photos in the S3 bucket (in the background), not on the server's disk.
+Environment=SAVE_CAPTURES=s3
+# The bucket's name and the region, saved by setup.sh. The "-" means: carry on even if the file is missing.
+EnvironmentFile=-/etc/signlang-s3.env
+ExecStart=/home/ubuntu/sign_language/.venv/bin/python -m uvicorn backend.app:app --host 127.0.0.1 --port 8000
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

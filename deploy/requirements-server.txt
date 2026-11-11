@@ -1,0 +1,12 @@
+# The Python libraries for the AWS server: the same versions as the laptop's .venv.
+# setup.sh installs these, taking PyTorch from its CPU-only download site.
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
+python-multipart==0.0.32
+pillow==12.3.0
+numpy==2.2.6
+mediapipe==1.2.2
+torch==2.14.1
+transformers==5.20.2
+# Only on the AWS server: Amazon's library for saving the photos to S3. The laptop does not need it.
+boto3

@@ -48,6 +48,24 @@ Keep the black window open while using the app. Close it, or press Ctrl+C, to st
 
 Double-click `reset.bat`. It shows the current numbers, then asks you to type `Y` to confirm. The old numbers are not deleted: each reset saves them in its own dated file in `backend\stats-backups\`, for example `stats-2026-11-08_14-30-05.json`. Open that file in Notepad to see what was there before. If the app is open, refresh the page to see the zeros. (In the app itself, Ctrl+Alt+R does the same.)
 
+## Saved photos (laptop only)
+
+Every webcam photo is kept in `captures\`, in one folder per day (for example `captures\20261110\`), each sorted into three folders:
+
+| Folder | Photos that go there |
+|---|---|
+| `success` | The AI named a sign and the visitor pressed **Yes** |
+| `failure` | The AI named a sign and the visitor pressed **No** |
+| `unknown` | No hand found (no Yes/No asked), or the page was closed before Yes/No |
+
+Whenever the AI gives a sign, even "not sure" or "not one of our 9 signs", the visitor must press Yes or No before Try Again and Finish appear.
+
+File names show the time, sign and confidence, for example `2026-11-10_10-15-03_V_93.jpg`. Resetting the statistics does not delete these photos. The AWS copy keeps its photos in the same day folders, each with the same three folders, in a private S3 bucket instead (see [deploy/STEPS.md](deploy/STEPS.md)).
+
+## Put it on the web (AWS, for the science fair)
+
+See [deploy/STEPS.md](deploy/STEPS.md). The laptop version above stays the backup and works the same.
+
 ## Run it by hand
 
 ```bash

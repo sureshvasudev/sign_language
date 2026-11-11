@@ -1,0 +1,211 @@
+# AI Sign Language Translator: everything needed on AWS, in one stack.
+# Create it in the AWS console (CloudFormation > Create stack) in the Mumbai region.
+# Deleting the stack deletes everything in it. All resources are tagged Project = sign_project.
+
+AWSTemplateFormatVersion: "2010-09-09"
+Description: AI Sign Language Translator (science fair, Nikita and Sivani). Tag Project=sign_project.
+
+Parameters:
+  DuckDnsName:
+    Type: String
+    Default: mysignlang
+    Description: The DuckDNS name only, without .duckdns.org (for example mysignlang)
+    AllowedPattern: "[a-z0-9-]+"
+  LoginUser:
+    Type: String
+    Description: The one shared login name the team types on the tablet (letters and digits)
+    AllowedPattern: "[A-Za-z0-9_]{3,20}"
+  LoginPassword:
+    Type: String
+    NoEcho: true
+    Description: The shared login password (8 to 30 letters and digits, no spaces or symbols)
+    AllowedPattern: "[A-Za-z0-9]{8,30}"
+  ResetPin:
+    Type: String
+    NoEcho: true
+    Description: The PIN needed to reset the statistics (4 to 8 digits)
+    AllowedPattern: "[0-9]{4,8}"
+  AlertEmail:
+    Type: String
+    Description: Email for the budget alert and the idle-stop alarm
+  HomeIp:
+    Type: String
+    Description: Your home IP address (from https://checkip.amazonaws.com), for example 49.37.10.20. Only this address can log in to the server.
+    AllowedPattern: "[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}"
+  InstanceType:
+    Type: String
+    Default: c7i.2xlarge
+    Description: Server size
+  BudgetUsd:
+    Type: Number
+    Default: 50
+    Description: Send an email when this month's AWS bill passes this many US dollars
+
+Resources:
+  # The key that lets the laptop copy the project to the server. AWS keeps it in Systems Manager Parameter Store.
+  KeyPair:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: signlang-key
+      Tags:
+        - { Key: Project, Value: sign_project }
+
+  # Firewall: web pages (80, 443) from anywhere; logging in (22) only from home.
+  Firewall:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Sign language app - web from anywhere, SSH from home only
+      SecurityGroupIngress:
+        - { IpProtocol: tcp, FromPort: 80, ToPort: 80, CidrIp: 0.0.0.0/0 }
+        - { IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0 }
+        - { IpProtocol: tcp, FromPort: 22, ToPort: 22, CidrIp: !Sub "${HomeIp}/32" }
+      Tags:
+        - { Key: Project, Value: sign_project }
+        - { Key: Name, Value: signlang-firewall }
+
+  # Private storage for the webcam photos, in the folders success/, failure/ and unknown/.
+  # Its name ends with your AWS account number, because bucket names must be unique in the world.
+  # It must be emptied before the stack is deleted (see STEPS.md).
+  PhotoBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "signlang-captures-${AWS::AccountId}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 }
+      Tags:
+        - { Key: Project, Value: sign_project }
+
+  # Permission for the server to put, copy and delete photos in that one bucket, and nothing else.
+  ServerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: ec2.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: photos-bucket-only
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [s3:PutObject, s3:GetObject, s3:DeleteObject]
+                Resource: !Sub "${PhotoBucket.Arn}/*"
+      Tags:
+        - { Key: Project, Value: sign_project }
+
+  # Hands the permission above to the server.
+  ServerProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref ServerRole
+
+  # The server: Ubuntu 24.04 with a 30 GB disk. On first start it only saves the settings; deploy/setup.sh does the rest.
+  Server:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: "{{resolve:ssm:/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id}}"
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyPair
+      IamInstanceProfile: !Ref ServerProfile
+      SecurityGroupIds:
+        - !GetAtt Firewall.GroupId
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs: { VolumeSize: 30, VolumeType: gp3, DeleteOnTermination: true }
+      PropagateTagsToVolumeOnCreation: true
+      Tags:
+        - { Key: Project, Value: sign_project }
+        - { Key: Name, Value: signlang-server }
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          # Save the settings for the app and for setup.sh. Only the root user can read this file.
+          cat > /etc/signlang.env <<'END'
+          DOMAIN=${DuckDnsName}.duckdns.org
+          LOGIN_USER=${LoginUser}
+          LOGIN_PASSWORD=${LoginPassword}
+          RESET_PIN=${ResetPin}
+          SAVE_DEBUG_CROPS=no
+          END
+          chmod 600 /etc/signlang.env
+
+  # The fixed internet address, so the DuckDNS name never needs changing.
+  FixedAddress:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      InstanceId: !Ref Server
+      Tags:
+        - { Key: Project, Value: sign_project }
+
+  # Email messages from the idle alarm. AWS sends a "confirm subscription" email first; click the link in it.
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: signlang-alerts
+      Subscription:
+        - { Protocol: email, Endpoint: !Ref AlertEmail }
+      Tags:
+        - { Key: Project, Value: sign_project }
+
+  # Safety net: if the server is idle (CPU under 5%) for 3 hours, stop it and send an email.
+  IdleStopAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: signlang-idle-stop
+      AlarmDescription: Stops the sign language server after 3 hours of no use
+      Namespace: AWS/EC2
+      MetricName: CPUUtilization
+      Dimensions:
+        - { Name: InstanceId, Value: !Ref Server }
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 36
+      Threshold: 5
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Sub "arn:aws:automate:${AWS::Region}:ec2:stop"
+        - !Ref AlertTopic
+
+  # Email when this month's AWS bill passes the budget.
+  Budget:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName: signlang-budget
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit: { Amount: !Ref BudgetUsd, Unit: USD }
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - { SubscriptionType: EMAIL, Address: !Ref AlertEmail }
+
+Outputs:
+  FixedIpAddress:
+    Description: Put this IP address into DuckDNS for your name
+    Value: !Ref FixedAddress
+  WebAddress:
+    Description: The app's address
+    Value: !Sub "https://${DuckDnsName}.duckdns.org"
+  KeyParameter:
+    Description: Where the login key is kept (Systems Manager > Parameter Store)
+    Value: !Sub "/ec2/keypair/${KeyPair.KeyPairId}"
+  PhotoBucketName:
+    Description: The S3 bucket with the webcam photos (success/, failure/, unknown/)
+    Value: !Ref PhotoBucket

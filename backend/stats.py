@@ -10,8 +10,9 @@ STATS_FILE = Path(__file__).parent / "stats.json"
 # Each reset moves the old numbers into this folder, in a file named with the date and time.
 BACKUP_FOLDER = Path(__file__).parent / "stats-backups"
 
-# The visitor is not asked Yes or No after these results, so they count as Unknown.
-UNKNOWN_RESULTS = ("not_sure", "no_hand", "not_included")
+# The visitor is not asked Yes or No after this result (the AI found no hand), so it counts as Unknown.
+# Every result with a sign (even "not sure" or "not included") is asked Yes or No instead.
+UNKNOWN_RESULTS = ("no_hand",)
 
 
 # The numbers for a day with no captures yet.

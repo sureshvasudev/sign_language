@@ -66,7 +66,7 @@
     <div class="card guide" id="guide">
       <h3>How to play</h3>
       <ol>
-        <li>Pick one of the 9 signs below.</li>
+        <li>Pick one of the 9 signs.</li>
         <li>Click <b>CLICK TO START</b> to turn on the camera.</li>
         <li>Show the sign clearly to the camera.</li>
         <li>When you are ready, press <b>Capture</b>.</li>
@@ -92,14 +92,15 @@
       <div class="big" id="resultIcon"></div>
       <div id="resultDetails"></div>
       <div id="feedback">
-        <div>Did the AI get it right?</div>
+        <div>Did the AI get it right? <small>Please tap Yes or No.</small></div>
         <div class="row-btns" style="margin-top:4px">
           <button class="btn" type="button" id="yesBtn">👍 Yes</button>
           <button class="btn y" type="button" id="noBtn">👎 No</button>
         </div>
       </div>
       <div id="thanks" hidden>Thank you! 💖</div>
-      <div class="row-btns">
+      <!-- Hidden while the visitor still has to answer Yes or No -->
+      <div class="row-btns" id="nextBtns">
         <button class="btn" type="button" id="againBtn">Try Again</button>
         <button class="btn y" type="button" id="finishBtn">Finish</button>
       </div>
@@ -107,19 +108,19 @@
 
   </div>
 
-  <!-- Learn the 9 signs: hover over a sign to see a sample photo (from the test_photos folder) -->
+  <!-- Learn the 9 signs (a strip on the right on wide screens, a row under the camera on upright tablets): hover over a sign to see a sample photo (from the test_photos folder) -->
   <div class="signs card">
     <h3>Learn the 9 signs</h3>
     <div class="chips">
-      <div class="chip" tabindex="0"><img class="chip-pic" src="test_photos/A.jpg" alt=""><span class="chip-name">A</span><img class="chip-pop" src="test_photos/A.jpg" alt="ASL sign for A"></div>
-      <div class="chip" tabindex="0"><img class="chip-pic" src="test_photos/B.jpg" alt=""><span class="chip-name">B</span><img class="chip-pop" src="test_photos/B.jpg" alt="ASL sign for B"></div>
-      <div class="chip" tabindex="0"><img class="chip-pic" src="test_photos/C.jpg" alt=""><span class="chip-name">C</span><img class="chip-pop" src="test_photos/C.jpg" alt="ASL sign for C"></div>
-      <div class="chip" tabindex="0"><img class="chip-pic" src="test_photos/F.jpg" alt=""><span class="chip-name">F</span><img class="chip-pop" src="test_photos/F.jpg" alt="ASL sign for F"></div>
-      <div class="chip" tabindex="0"><img class="chip-pic" src="test_photos/O.jpg" alt=""><span class="chip-name">O</span><img class="chip-pop" src="test_photos/O.jpg" alt="ASL sign for O"></div>
-      <div class="chip" tabindex="0"><img class="chip-pic" src="test_photos/L.jpg" alt=""><span class="chip-name">L</span><img class="chip-pop" src="test_photos/L.jpg" alt="ASL sign for L"></div>
-      <div class="chip" tabindex="0"><img class="chip-pic" src="test_photos/V.jpg" alt=""><span class="chip-name">V</span><img class="chip-pop" src="test_photos/V.jpg" alt="ASL sign for V"></div>
-      <div class="chip" tabindex="0"><img class="chip-pic" src="test_photos/Y.jpg" alt=""><span class="chip-name">Y</span><img class="chip-pop" src="test_photos/Y.jpg" alt="ASL sign for Y"></div>
-      <div class="chip" tabindex="0" title="I love you"><img class="chip-pic" src="test_photos/ILoveU.jpg" alt=""><span class="chip-name">🤟</span><img class="chip-pop" src="test_photos/ILoveU.jpg" alt="ASL sign for I love you"></div>
+      <div class="chip" tabindex="0" data-sign="A"><img class="chip-pic" src="test_photos/A.jpg" alt=""><span class="chip-name">A</span><img class="chip-pop" src="test_photos/A.jpg" alt="ASL sign for A"></div>
+      <div class="chip" tabindex="0" data-sign="B"><img class="chip-pic" src="test_photos/B.jpg" alt=""><span class="chip-name">B</span><img class="chip-pop" src="test_photos/B.jpg" alt="ASL sign for B"></div>
+      <div class="chip" tabindex="0" data-sign="C"><img class="chip-pic" src="test_photos/C.jpg" alt=""><span class="chip-name">C</span><img class="chip-pop" src="test_photos/C.jpg" alt="ASL sign for C"></div>
+      <div class="chip" tabindex="0" data-sign="F"><img class="chip-pic" src="test_photos/F.jpg" alt=""><span class="chip-name">F</span><img class="chip-pop" src="test_photos/F.jpg" alt="ASL sign for F"></div>
+      <div class="chip" tabindex="0" data-sign="O"><img class="chip-pic" src="test_photos/O.jpg" alt=""><span class="chip-name">O</span><img class="chip-pop" src="test_photos/O.jpg" alt="ASL sign for O"></div>
+      <div class="chip" tabindex="0" data-sign="L"><img class="chip-pic" src="test_photos/L.jpg" alt=""><span class="chip-name">L</span><img class="chip-pop" src="test_photos/L.jpg" alt="ASL sign for L"></div>
+      <div class="chip" tabindex="0" data-sign="V"><img class="chip-pic" src="test_photos/V.jpg" alt=""><span class="chip-name">V</span><img class="chip-pop" src="test_photos/V.jpg" alt="ASL sign for V"></div>
+      <div class="chip" tabindex="0" data-sign="Y"><img class="chip-pic" src="test_photos/Y.jpg" alt=""><span class="chip-name">Y</span><img class="chip-pop" src="test_photos/Y.jpg" alt="ASL sign for Y"></div>
+      <div class="chip" tabindex="0" data-sign="I LOVE YOU" title="I love you"><img class="chip-pic" src="test_photos/ILoveU.jpg" alt=""><span class="chip-name">🤟</span><img class="chip-pop" src="test_photos/ILoveU.jpg" alt="ASL sign for I love you"></div>
     </div>
   </div>
 
@@ -159,12 +160,13 @@
           <span class="flow-step">💬 Result</span>
         </div>
         <ul>
-          <li>The webpage takes a photo from the webcam and sends it to a small program (an API) running on the same laptop.</li>
+          <!-- The three lines with an id are swapped by app.js on the AWS copy, because there the app is not on the laptop. -->
+          <li id="aboutApi">The webpage takes a photo from the webcam and sends it to a small program (an API) running on the same laptop.</li>
           <li>MediaPipe, a free Google tool, finds the hand and crops the photo to it. If there is no hand, you are asked to try again.</li>
           <li>An AI model called SigLIP2, trained on ASL signs, scores the photo against each sign and picks the highest.</li>
           <li>If the best score is below about 70%, the page says "not sure, try again" instead of guessing.</li>
-          <li>Everything runs on the laptop, so no photos leave it and it works without internet.</li>
-          <li>The statistics are saved in a small file on the laptop, so they are still there after the page or the laptop is closed and opened again.</li>
+          <li id="aboutOffline">Everything runs on the laptop, so no photos leave it and it works without internet.</li>
+          <li id="aboutStats">The statistics are saved in a small file on the laptop, so they are still there after the page or the laptop is closed and opened again.</li>
         </ul>
       </div>
     </div>
@@ -174,6 +176,9 @@
       <span class="member"><b>Nikita</b> · Class 9 - Sapphire</span>
       <span class="member"><b>Sivani</b> · Class 9 - Sapphire</span>
     </footer>
+
+    <!-- For the team: set the statistics back to 0 (asks "are you sure?", and a PIN on the AWS copy) -->
+    <p class="reset-row"><button class="reset-link" id="resetLink" type="button">Reset statistics</button></p>
   </div>
 </dialog>
 

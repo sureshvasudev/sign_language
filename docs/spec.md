@@ -50,14 +50,15 @@ An educational science fair project showing how AI can recognise American Sign L
    - **Not sure:** confidence below the threshold (start at 70%): "THE AI FAILED TO RECOGNISE THE SIGN." and ask to try again.
    - **No hand found:** MediaPipe found no hand: ask to try again, with a tip about light and distance.
    - **Not included:** the best match is a sign outside the 9: "SIGN NOT INCLUDED IN THIS PROJECT." and ask to try again.
-   - Then: "Did the AI get it right?" **Yes / No**, then **Try Again / Finish**.
+   - Then, whenever the AI gave a sign (Recognised, Not sure or Not included): "Did the AI get it right?" **Yes / No**. **Try Again / Finish** stay hidden until Yes or No is pressed.
+   - For No hand found: no Yes/No question; **Try Again / Finish** show straight away.
 
 ## Statistics rules
 
 - **Attempts** goes up by 1 for every capture.
 - **Correct** goes up when the visitor presses Yes.
 - **Incorrect** goes up when the visitor presses No.
-- **Unknown** goes up when the result is Not sure, No hand found or Not included. (The visitor is not asked Yes/No in these cases.)
+- **Unknown** goes up when the result is No hand found. (The visitor is not asked Yes/No in that case.) Not sure and Not included are asked Yes/No, so they count as Correct or Incorrect. (Changed on 8 Nov 2026 at the user's request; before that, Not sure and Not included counted as Unknown.)
 - Statistics are saved per day, using the laptop's date. The page shows only yesterday and today; every day stays in `backend/stats.json`.
 - Statistics must still be there after the page or the laptop is closed and opened again.
 
